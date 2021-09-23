@@ -18,3 +18,11 @@ use App\Http\Controllers\AuthController;
 
 Route::post('/user/create', [AuthController::class, 'create']);
 Route::post('/user/authenticate', [AuthController::class, 'authenticate']);
+
+
+Route::middleware(['auth:api', 'admin'])->group(function() {
+	Route::post('/admin/getTables', 'App\Http\Controllers\AdminController@getTables');
+	Route::post('/admin/getTable', 'App\Http\Controllers\AdminController@getTable');
+	Route::post('/admin/editRow', 'App\Http\Controllers\AdminController@editRow');
+	Route::post('/admin/deleteRow', 'App\Http\Controllers\AdminController@deleteRow');
+});
