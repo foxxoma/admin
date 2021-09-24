@@ -44,6 +44,15 @@ class AdminHelper
 	{
 		$viewTables = json_decode(DB::table('admin_settings')->where('name', 'view_tables')->first()->settings);
 		if (empty($viewTables))
+			$viewTables = [];
+
+		return ['success' => true, 'viewTables' => $viewTables];
+	}
+
+	public static function getViewTablesArray()
+	{
+		$viewTables = json_decode(DB::table('admin_settings')->where('name', 'view_tables')->first()->settings);
+		if (empty($viewTables))
 			return [];
 
 		return $viewTables;
@@ -51,7 +60,7 @@ class AdminHelper
 
 	public static function getTables()
 	{
-		$viewTables = self::getViewTables();
+		$viewTables = self::getViewTablesArray();
 		$tables = [];
 
 		$tablesName = collect(DB::connection()->select('show tables'))->map(function ($val) {
