@@ -15,6 +15,11 @@ class AdminController extends Controller
 		return AdminHelper::start();
 	}
 
+	public function setViewTables(Request $request)
+	{
+		return AdminHelper::setViewTables($request->settings);
+	}
+
 	public function getTables(Request $request)
 	{
 		return AdminHelper::getTables();

@@ -10,7 +10,7 @@ class ValidateHelper
 
 		foreach ($props as $key => $prop)
 			if(empty($prop) && $prop !== 0)
-				$errors[] = 'empty ' . $key;
+				$errors[] = 'Пустое поле ' . $key;
 
 		if(empty($errors))
 			return false;

@@ -14,13 +14,30 @@ class AdminHelper
 	{
 		$adminSettings = DB::table('admin_settings');
 		if (empty($adminSettings))
-			return ['success' => false, 'msgs' => ['не найденf таблица "admin_settings"']];
+			return ['success' => false, 'msgs' => ['Не найдена таблица "admin_settings"']];
+
+		$viewTables = DB::table('admin_settings')->where('name', 'view_tables')->first();
+		if (!empty($viewTables))
+			return true;
 
 		$startData = [
 			'name' => 'view_tables', 'settings' => json_encode(['users'])
 		];
 
-		return $adminSettings->insert($startData);
+		if($adminSettings->insert($startData));
+			return ['success' => true];
+	}
+
+	public static function setViewTables($settings = '')
+	{
+		if (empty($settings))
+			return ['success' => false, 'msgs' => ['Пустое поле: settings']];
+
+		$viewTables = DB::table('admin_settings')->where('name', 'view_tables')->first();
+		$viewTables->settings = json_encode($settings);
+
+		if($viewTables->save());
+			return ['success' => true];
 	}
 
 	public static function getViewTables()
@@ -28,6 +45,7 @@ class AdminHelper
 		$viewTables = json_decode(DB::table('admin_settings')->where('name', 'view_tables')->first()->settings);
 		if (empty($viewTables))
 			return [];
+
 		return $viewTables;
 	}
 
@@ -103,7 +121,7 @@ class AdminHelper
 		$rowsData = json_decode(json_encode(DB::select('DESCRIBE ' . $tableName)),true);
 
 		if (empty($rowsData))
-			return ['success' => false, 'msgs' => ['таблица не найдена']];
+			return ['success' => false, 'msgs' => ['Таблица не найдена']];
 
 		foreach($rowsData as $key => $rowData)
 		{
