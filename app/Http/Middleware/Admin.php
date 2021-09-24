@@ -20,7 +20,7 @@ class Admin
         $user = Auth::user();
 
         if (empty($user['admin']))
-            return route('login');
+            return response('Доступ запрещен', 401);
 
         return $next($request);
     }
