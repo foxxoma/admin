@@ -10,6 +10,11 @@ use \App\Helpers\AdminHelper;
 
 class AdminController extends Controller
 {
+	public function start()
+	{
+		return AdminHelper::start();
+	}
+
 	public function getTables(Request $request)
 	{
 		return AdminHelper::getTables();

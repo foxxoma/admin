@@ -21,6 +21,7 @@ Route::post('/user/authenticate', [AuthController::class, 'authenticate']);
 
 
 Route::middleware(['auth:api', 'admin'])->group(function() {
+	Route::post('/admin/start', 'App\Http\Controllers\AdminController@start');
 	Route::post('/admin/getTables', 'App\Http\Controllers\AdminController@getTables');
 	Route::post('/admin/getTable', 'App\Http\Controllers\AdminController@getTable');
 	Route::post('/admin/editRow', 'App\Http\Controllers\AdminController@editRow');

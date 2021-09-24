@@ -6,25 +6,50 @@ use \App\Helpers\ValidateHelper;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\Admin;
+use App\Models\AdminSettings;
 
 class AdminHelper
 {
+	public static function start()
+	{
+		$adminSettings = DB::table('admin_settings');
+		if (empty($adminSettings))
+			return ['success' => false, 'msgs' => ['не найденf таблица "admin_settings"']];
+
+		$startData = [
+			'name' => 'view_tables', 'settings' => json_encode(['users'])
+		];
+
+		return $adminSettings->insert($startData);
+	}
+
+	public static function getViewTables()
+	{
+		$viewTables = json_decode(DB::table('admin_settings')->where('name', 'view_tables')->first()->settings);
+		if (empty($viewTables))
+			return [];
+		return $viewTables;
+	}
+
 	public static function getTables()
 	{
+		$viewTables = self::getViewTables();
 		$tables = [];
 
 		$tablesName = collect(DB::connection()->select('show tables'))->map(function ($val) {
-			foreach ($val as $key => $tbl) {
+			foreach ($val as $key => $tbl) 
 				return $tbl;
-			}
 		});
 
 		foreach ($tablesName as $tbName)
-		{
+		{	
+			if(!in_array($tbName, $viewTables))
+				continue;
+
 			$tables[$tbName]['rows'] = DB::table($tbName)->skip(0)->take(15)->get();
 			$tables[$tbName]['name'] = $tbName;
 			$tables[$tbName]['page'] = 1;
-			$tables[$tbName]['rowsName'] = DB::getSchemaBuilder()->getColumnListing($tbName);
+			$tables[$tbName]['rowsData'] = DB::select('DESCRIBE ' . $tbName);
 		}
 
 		if(!empty($tables))
@@ -64,6 +89,7 @@ class AdminHelper
 	{
 		$errors = [];
 		$bdrow = [];
+		$rowsData = [];
 
 		$data = [
 			'row' => $row,
@@ -74,6 +100,19 @@ class AdminHelper
 		if (!empty($errors))
 			return ['success' => false, 'msgs' => $errors];
 
+		$rowsData = json_decode(json_encode(DB::select('DESCRIBE ' . $tableName)),true);
+
+		if (empty($rowsData))
+			return ['success' => false, 'msgs' => ['таблица не найдена']];
+
+		foreach($rowsData as $key => $rowData)
+		{
+			$rowsData[$rowData['Field']] = $rowData;
+			unset($rowsData[$key]);
+		}
+
+		return $rowsData;
+
 		if(!empty($row['id']))
 			$bdrow = DB::table($tableName)->where('id','=',$row['id']);
 
@@ -82,7 +121,7 @@ class AdminHelper
 
 		$empty = false;
 		foreach ($row as $nonKey => $non)
-			if(empty($non) && $nonKey != 'id' && $nonKey != 'created_at' && $nonKey != 'updated_at'&& $nonKey != 'remember_token' && $nonKey != 'email_verified_at')
+			if(empty($non) && $rowsData[$nonKey]['Null'] == 'No' && empty($rowsData[$nonKey]['Default']) && $rowsData[$nonKey]['Extra'] != "auto_increment")
 				$empty = true;
 
 		if(!$empty)
