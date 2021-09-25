@@ -101,10 +101,21 @@ class AdminHelper
 		if (!empty($errors))
 			return ['success' => false, 'msgs' => $errors];
 
+		$rowsData = json_decode(json_encode(DB::select('DESCRIBE ' . $tableName)),true);
+
+		if (empty($rowsData))
+			return ['success' => false, 'msgs' => ['Таблица не найдена']];
+
+		foreach($rowsData as $key => $rowData)
+		{
+			$rowsData[$rowData['Field']] = $rowData;
+			unset($rowsData[$key]);
+		}
+
 		$table['rows'] = DB::table($tableName)->skip($from)->take($to)->get();
 		$table['name'] = $tableName;
 		$table['page'] = $page;
-		$table['rowsName'] = DB::getSchemaBuilder()->getColumnListing($tableName);
+		$table['rowsData'] = $rowsData;
 
 		if(!empty($table))
 			return ['success' => true, 'table' => $table];
