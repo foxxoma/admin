@@ -40,7 +40,7 @@ class AdminController extends Controller
 		return AdminHelper::editRow($request->tableName, $request->row);
 	}
 
-	public function deleteRow(Request $req)
+	public function deleteRow(Request $request)
 	{
 		return AdminHelper::deleteRow($request->tableName, $request->row);
 	}

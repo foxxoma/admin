@@ -6,10 +6,31 @@
     class="elevation-1"
   >
     <template v-slot:top>
+      <v-card-title
+      >
+        Таблицы:
+      </v-card-title>
+      <v-row background-color>
+        <v-col
+          v-for="(it, index) in tables"
+          :key="index"
+          cols="12"
+          sm="6"
+          md="4"
+        >
+          <v-card-title
+            :color="it == currentTable?'Y':''"
+            cursor
+            :label="index"
+            v-on:click="selectTable(it)"
+          >{{it}}</v-card-title>
+        </v-col>
+      </v-row>
+
       <v-toolbar
         flat
       >
-        <v-toolbar-title>My CRUD</v-toolbar-title>
+        <v-toolbar-title>{{currentTable}}</v-toolbar-title>
         <v-divider
           class="mx-4"
           inset
@@ -47,6 +68,7 @@
                     md="4"
                   >
                     <v-text-field
+                      v-if="dataTable.rowsData[index]['Field'] != 'id'"
                       :background-color="dataTable.rowsData[index]['Null'] == 'YES'?'#F0F0F0':''"
                       v-model="editedItem[index]"
                       :label="index"
@@ -117,6 +139,8 @@
 <script>
   export default {
     data: () => ({
+      currentTable: '',
+      tables: [],
       dialog: false,
       dialogDelete: false,
       headers: [],
@@ -148,14 +172,106 @@
 
     methods: {
       initialize () {
+        this.getTables();
+      },
+
+      editRow(tableName ,row)
+      {
         let myHeaders = new Headers();
         myHeaders.append("Authorization", "Bearer 4e53fc5b1831d2daabebacd838c61f9351e2f7c9254fecf5c1799232d4bc8feb");
 
         var formdata = new FormData();
-        formdata.append("tableName",'users');
-        formdata.append("from", 0);
-        formdata.append("to", 10);
-        formdata.append("page", 1);
+        formdata.append("tableName",tableName);
+        formdata.append("row", JSON.stringify(row));
+
+        let requestOptions = {
+          method: 'POST',
+          headers: myHeaders,
+          body: formdata,
+        };
+
+        fetch("http://localhost:8888/public/api/admin/editRow", requestOptions)
+          .then(response => response.text())
+          .then(result => JSON.parse(result))
+          .then(obj => {
+            if (!obj.success)
+              console.log(obj.msgs);
+            else
+              console.log(true)
+          })
+          .catch(error => console.log('error', error));
+      },
+
+      deleteRow(tableName ,row)
+      {
+        let myHeaders = new Headers();
+        myHeaders.append("Authorization", "Bearer 4e53fc5b1831d2daabebacd838c61f9351e2f7c9254fecf5c1799232d4bc8feb");
+
+        var formdata = new FormData();
+        formdata.append("tableName",tableName);
+        formdata.append("row", JSON.stringify(row));
+
+        let requestOptions = {
+          method: 'POST',
+          headers: myHeaders,
+          body: formdata,
+        };
+
+        fetch("http://localhost:8888/public/api/admin/deleteRow", requestOptions)
+          .then(response => response.text())
+          .then(result => JSON.parse(result))
+          .then(obj => {
+            if (!obj.success)
+              console.log(obj.msgs);
+            else
+              console.log(true)
+          })
+          .catch(error => console.log('error', error));
+      },
+
+      selectTable(name)
+      {
+        this.currentTable = name;
+        this.getTable(this.currentTable, 0 , 1000, 1);
+      },
+
+      getTables()
+      {
+        let myHeaders = new Headers();
+        myHeaders.append("Authorization", "Bearer 4e53fc5b1831d2daabebacd838c61f9351e2f7c9254fecf5c1799232d4bc8feb");
+
+        let requestOptions = {
+          method: 'POST',
+          headers: myHeaders,
+          redirect: 'follow'
+        };
+
+        fetch("http://localhost:8888/public/api/admin/getViewTables", requestOptions)
+          .then(response => response.text())
+          .then(result => JSON.parse(result))
+          .then(obj => {
+            if (!obj.success)
+              console.log(obj.msgs);
+            else
+            {
+              this.tables = obj.viewTables;
+              this.currentTable = this.tables[0];
+              this.getTable(this.currentTable, 0 , 1000, 1);
+            }
+          })
+          .catch(error => console.log('error', error));
+      },
+
+      getTable(tableName = '', from = '', to = '', page = '')
+      {
+        let myHeaders = new Headers();
+        myHeaders.append("Authorization", "Bearer 4e53fc5b1831d2daabebacd838c61f9351e2f7c9254fecf5c1799232d4bc8feb");
+
+        var formdata = new FormData();
+        formdata.append("tableName",tableName);
+        formdata.append("from", from);
+        formdata.append("to", to);
+        formdata.append("page", page);
 
         let requestOptions = {
           method: 'POST',
@@ -168,25 +284,28 @@
           .then(response => response.text())
           .then(result => JSON.parse(result))
           .then(obj => {
-            this.setRowsData(obj);
+            if (!obj.success)
+              console.log(obj.msgs);
+            else
+              this.setRowsData(obj.table);
           })
           .catch(error => console.log('error', error));
       },
 
-      setRowsData(result)
+      setRowsData(table)
       {
-        this.desserts = result.table.rows;
+        this.desserts = table.rows;
         let headers = [];
         let defaultItem = {};
 
-        for (let key in result.table.rowsData)
+        for (let key in table.rowsData)
         {
-          headers.push({text: result.table.rowsData[key]['Field'], value: result.table.rowsData[key]['Field'] });
-          defaultItem[result.table.rowsData[key]['Field']] = result.table.rowsData[key]['Default'];
+          headers.push({text: table.rowsData[key]['Field'], value: table.rowsData[key]['Field'] });
+          defaultItem[table.rowsData[key]['Field']] = table.rowsData[key]['Default'];
         }
         headers.push({ text: 'Actions', value: 'actions', sortable: false });
 
-        this.dataTable = result.table;
+        this.dataTable = table;
         this.defaultItem = defaultItem; 
         this.headers = headers;
         this.editedItem = defaultItem;
@@ -205,6 +324,7 @@
       },
 
       deleteItemConfirm () {
+        this.deleteRow(this.currentTable ,this.desserts[this.editedIndex])
         this.desserts.splice(this.editedIndex, 1)
         this.closeDelete()
       },
@@ -226,6 +346,7 @@
       },
 
       save () {
+        this.editRow(this.currentTable ,this.editedItem);
         if (this.editedIndex > -1) {
           Object.assign(this.desserts[this.editedIndex], this.editedItem)
         } else {
@@ -239,3 +360,18 @@
     }
   }
 </script>
+<style type="text/css">
+  *[background-color]{
+    background-color: #ccc;
+    margin-bottom: 40px;
+  }
+  *[color=Y]
+  {
+    color: #1976d2;
+  }
+  *[cursor]
+  {
+    border-right: 1px solid #000;
+    cursor: pointer;
+  }
+</style>

@@ -138,6 +138,8 @@ class AdminHelper
 		if (!empty($errors))
 			return ['success' => false, 'msgs' => $errors];
 
+		$rowArray = json_decode($row,1);
+
 		$rowsData = json_decode(json_encode(DB::select('DESCRIBE ' . $tableName)),true);
 
 		if (empty($rowsData))
@@ -149,21 +151,19 @@ class AdminHelper
 			unset($rowsData[$key]);
 		}
 
-		return $rowsData;
-
-		if(!empty($row['id']))
-			$bdrow = DB::table($tableName)->where('id','=',$row['id']);
+		if(!empty($rowArray['id']))
+			$bdrow = DB::table($tableName)->where('id','=',$rowArray['id']);
 
 		if (!empty($bdrow))
-			return ['success' => true, 'row' => $bdrow->update($row)];
+			return ['success' => true, 'row' => $bdrow->update($rowArray)];
 
 		$empty = false;
-		foreach ($row as $nonKey => $non)
+		foreach ($rowArray as $nonKey => $non)
 			if(empty($non) && $rowsData[$nonKey]['Null'] == 'No' && empty($rowsData[$nonKey]['Default']) && $rowsData[$nonKey]['Extra'] != "auto_increment")
 				$empty = true;
 
 		if(!$empty)
-			return ['success' => true, 'row' => $table->insert($row)];
+			return ['success' => true, 'row' => DB::table($tableName)->insert($rowArray)];
 		else
 			return ['success' => false, 'msgs' => ['Есть пустые поля']];
 	}
@@ -182,8 +182,10 @@ class AdminHelper
 		if (!empty($errors))
 			return ['success' => false, 'msgs' => $errors];
 
-		if(!empty($row['id']))
-			$bdrow = DB::table($tableName)->where('id','=',$row['id']);
+		$rowArray = json_decode($row,1);
+
+		if(!empty($rowArray['id']))
+			$bdrow = DB::table($tableName)->where('id','=',$rowArray['id']);
 
 		if (!empty($bdrow))
 			if(!$bdrow->delete())
