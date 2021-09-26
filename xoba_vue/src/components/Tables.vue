@@ -73,6 +73,12 @@
                       v-model="editedItem[index]"
                       :label="index"
                     ></v-text-field>
+                    <v-file-input
+                      v-if="dataTable.rowsData[index]['Field'] == 'img'"
+                      :background-color="dataTable.rowsData[index]['Null'] == 'YES'?'#F0F0F0':''"
+                      v-model="editedItem[index]"
+                      :label="index"
+                    ></v-file-input>
                   </v-col>
                 </v-row>
               </v-container>
@@ -182,7 +188,7 @@
 
         var formdata = new FormData();
         formdata.append("tableName",tableName);
-        formdata.append("row", JSON.stringify(row));
+        formdata = this.toFormData(row,formdata,'row')
 
         let requestOptions = {
           method: 'POST',
@@ -202,6 +208,33 @@
           .catch(error => console.log('error', error));
       },
 
+      toFormData(obj, form, namespace) {
+        let fd = form || new FormData();
+        let formKey;
+        
+        for(let property in obj) {
+          if(obj[property]) {
+            if (namespace) {
+              formKey = namespace + '[' + property + ']';
+            } else {
+              formKey = property;
+            }
+           
+            // if the property is an object, but not a File, use recursivity.
+            if (obj[property] instanceof Date) {
+              fd.append(formKey, obj[property].toISOString());
+            }
+            else if (typeof obj[property] === 'object' && !(obj[property] instanceof File)) {
+              this.toFormData(obj[property], fd, formKey);
+            } else { // if it's a string or a File object
+              fd.append(formKey, obj[property]);
+            }
+          }
+        }
+        
+        return fd;
+      },
+
       deleteRow(tableName ,row)
       {
         let myHeaders = new Headers();
@@ -209,7 +242,7 @@
 
         var formdata = new FormData();
         formdata.append("tableName",tableName);
-        formdata.append("row", JSON.stringify(row));
+        formdata = this.toFormData(row,formdata,'row')
 
         let requestOptions = {
           method: 'POST',
