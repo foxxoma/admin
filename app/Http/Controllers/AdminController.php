@@ -35,6 +35,11 @@ class AdminController extends Controller
 		return AdminHelper::getTable($request->tableName, $request->from, $request->to, $request->page);
 	}
 
+	public function getFilesProp(Request $request)
+	{
+		return AdminHelper::getFilesProp();
+	}
+
 	public function editRow(Request $request)
 	{
 		return AdminHelper::editRow($request->tableName, $request->row);

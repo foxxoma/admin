@@ -21,7 +21,8 @@ class AdminHelper
 			return true;
 
 		$startData = [
-			'name' => 'view_tables', 'settings' => json_encode(['users'])
+			'name' => 'view_tables', 'settings' => json_encode(['users']),
+			'name' => 'files', 'settings' => json_encode(['images', 'image'])
 		];
 
 		if($adminSettings->insert($startData));
@@ -38,6 +39,15 @@ class AdminHelper
 
 		if($viewTables->save());
 			return ['success' => true];
+	}
+
+	public static function getFilesProp()
+	{
+		$filesProp = json_decode(DB::table('admin_settings')->where('name', 'files')->first()->settings);
+		if (empty($filesProp))
+			$filesProp = [];
+
+		return ['success' => true, 'filesProp' => $filesProp];
 	}
 
 	public static function getViewTables()
@@ -123,11 +133,13 @@ class AdminHelper
 			return ['success' => false, 'msgs' => ['Ничего не найдено']];
 	}
 
-	public static function editRow($tableName = '', $row = '')
+	public static function editRow($tableName = '', $rRow = '')
 	{
 		$errors = [];
 		$bdrow = [];
 		$rowsData = [];
+		$row = $rRow;
+		$files = [];
 
 		$data = [
 			'row' => $row,
@@ -137,6 +149,23 @@ class AdminHelper
 		$errors = ValidateHelper::checkEmpty($data);
 		if (!empty($errors))
 			return ['success' => false, 'msgs' => $errors];
+
+		$uploads_dir = $_SERVER['DOCUMENT_ROOT'].'/uploads';
+
+		if (!empty($_FILES["row"]))
+		{
+			foreach ($_FILES["row"]["error"] as $key => $error)
+			{
+				if ($error == UPLOAD_ERR_OK) {
+					$tmp_name = $_FILES["row"]["tmp_name"][$key];
+					$name = basename($_FILES["row"]["name"][$key]);
+					$path = "$uploads_dir/$name";
+					$row[$key] = $path;
+					$files[$key] = $path;
+					move_uploaded_file($tmp_name, $path);
+				}
+			}
+		}
 
 		$rowsData = json_decode(json_encode(DB::select('DESCRIBE ' . $tableName)),true);
 
@@ -153,7 +182,7 @@ class AdminHelper
 			$bdrow = DB::table($tableName)->where('id','=',$row['id']);
 
 		if (!empty($bdrow))
-			return ['success' => true, 'row' => $bdrow->update($row)];
+			return ['success' => true, 'row' => $bdrow->update($row), 'files' => $files];
 
 		$empty = false;
 		foreach ($row as $nonKey => $non)
@@ -161,7 +190,7 @@ class AdminHelper
 				$empty = true;
 
 		if(!$empty)
-			return ['success' => true, 'row' => DB::table($tableName)->insert($row)];
+			return ['success' => true, 'row' => DB::table($tableName)->insert($row), 'files' => $files];
 		else
 			return ['success' => false, 'msgs' => ['Есть пустые поля']];
 	}

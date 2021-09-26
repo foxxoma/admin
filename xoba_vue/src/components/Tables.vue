@@ -68,13 +68,13 @@
                     md="4"
                   >
                     <v-text-field
-                      v-if="dataTable.rowsData[index]['Field'] != 'id'"
+                      v-if="dataTable.rowsData[index]['Field'] != 'id' && !filesProp.includes(dataTable.rowsData[index]['Field'])"
                       :background-color="dataTable.rowsData[index]['Null'] == 'YES'?'#F0F0F0':''"
                       v-model="editedItem[index]"
                       :label="index"
                     ></v-text-field>
                     <v-file-input
-                      v-if="dataTable.rowsData[index]['Field'] == 'img'"
+                      v-if="dataTable.rowsData[index]['Field'] != 'id' && filesProp.includes(dataTable.rowsData[index]['Field'])"
                       :background-color="dataTable.rowsData[index]['Null'] == 'YES'?'#F0F0F0':''"
                       v-model="editedItem[index]"
                       :label="index"
@@ -145,6 +145,7 @@
 <script>
   export default {
     data: () => ({
+      filesProp: [],
       currentTable: '',
       tables: [],
       dialog: false,
@@ -178,10 +179,33 @@
 
     methods: {
       initialize () {
+        this.getFilesProp();
         this.getTables();
       },
 
-      editRow(tableName ,row)
+      getFilesProp()
+      {
+        let myHeaders = new Headers();
+        myHeaders.append("Authorization", "Bearer 4e53fc5b1831d2daabebacd838c61f9351e2f7c9254fecf5c1799232d4bc8feb");
+
+        let requestOptions = {
+          method: 'POST',
+          headers: myHeaders,
+        };
+
+        fetch("http://localhost:8888/public/api/admin/getFilesProp", requestOptions)
+          .then(response => response.text())
+          .then(result => JSON.parse(result))
+          .then(obj => {
+            if (!obj.success)
+              console.log(obj.msgs);
+            else
+              this.filesProp = obj.filesProp;
+          })
+          .catch(error => console.log('error', error));
+      },
+
+      editRow(tableName, row, index)
       {
         let myHeaders = new Headers();
         myHeaders.append("Authorization", "Bearer 4e53fc5b1831d2daabebacd838c61f9351e2f7c9254fecf5c1799232d4bc8feb");
@@ -203,7 +227,23 @@
             if (!obj.success)
               console.log(obj.msgs);
             else
-              console.log(true)
+            {
+              if (obj.files)
+              {
+                if (index > -1)
+                {
+                  for(let key in obj.files)
+                    this.desserts[index][key] = obj.files[key];
+                }
+                else
+                {
+                  for(let key in obj.files)
+                  {
+                    this.desserts[this.desserts.length - 1][key] = obj.files[key];
+                  }
+                }
+              }
+            }
           })
           .catch(error => console.log('error', error));
       },
@@ -379,7 +419,7 @@
       },
 
       save () {
-        this.editRow(this.currentTable ,this.editedItem);
+        this.editRow(this.currentTable ,this.editedItem, this.editedIndex);
         if (this.editedIndex > -1) {
           Object.assign(this.desserts[this.editedIndex], this.editedItem)
         } else {

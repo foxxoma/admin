@@ -22,6 +22,7 @@ Route::post('/user/authenticate', [AuthController::class, 'authenticate']);
 
 Route::middleware(['auth:api', 'admin'])->group(function() {
 	Route::post('/admin/start', 'App\Http\Controllers\AdminController@start');
+	Route::post('/admin/getFilesProp', 'App\Http\Controllers\AdminController@getFilesProp');
 	Route::post('/admin/getViewTables', 'App\Http\Controllers\AdminController@getViewTables');
 	Route::post('/admin/setViewTables', 'App\Http\Controllers\AdminController@setViewTables');
 	Route::post('/admin/getTables', 'App\Http\Controllers\AdminController@getTables');
